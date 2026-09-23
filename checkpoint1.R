@@ -275,9 +275,9 @@ outcome_summary <- outcomes[, .(
   n = .N,
   n_died = sum(`In-hospital_death` == 1),
   pct_died = 100 * mean(`In-hospital_death` == 1),
-  median_LOS = median(Length_of_stay),
-  median_SAPS = median(`SAPS-I`),
-  median_SOFA = median(SOFA)
+  median_LOS = median(Length_of_stay, na.rm = TRUE),
+  median_SAPS = median(`SAPS-I`, na.rm = TRUE),
+  median_SOFA = median(SOFA, na.rm = TRUE)
 )]
 
 fwrite(outcome_summary, file.path(out_dir, "outcomes.csv"))
