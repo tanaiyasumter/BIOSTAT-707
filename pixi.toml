@@ -14,6 +14,12 @@ r-gtsummary = "*"
 r-naniar = "*"
 r-here = "*"
 quarto = ">=1.9.38,<2"
+r-glmnet = ">=5.0,<6"
+r-ranger = ">=0.18.0,<0.19"
+r-proc = ">=1.19.1,<2"
+r-mgcv = ">=1.9_4,<2"
+r-tidyverse = ">=2.0.0,<3"
+r-tidymodels = ">=1.4.1,<2"
 
 [tasks]
 checkpoint1 = "Rscript checkpoint1.R"

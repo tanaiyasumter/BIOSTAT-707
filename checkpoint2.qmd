@@ -1,11 +1,468 @@
 ---
-title: "Checkpoint 2 test"
-format: html
+title: "Checkpoint 2: Building and comparing models on set-a"
+format:
+  html:
+    toc: true
+execute:
+  warning: false
+  message: false
 ---
 
-## does it work for me
-If you can read this, Quarto works.
+## AI-use statement
+
+(To write last, in your own words: which tools, what for, how you checked the output, and the pluses and minuses.)
+
+## Setup
+
+```{r setup}
+
+suppressPackageStartupMessages({
+  library(data.table)
+  library(ggplot2)
+  library(tidymodels)
+})
+
+set.seed(707)
+root <- here::here()
+data_dir <- file.path(root, "data")
+out_dir <- file.path(root, "output")
+dir.create(out_dir, showWarnings = FALSE)
+expected_n <- 4000
+
+```
+
+## 2.1 The modeling table
+
+```{r load-data}
+
+files <- list.files(file.path(data_dir, "set-a"), full.names = TRUE)
+stopifnot(length(files) == expected_n)
+
+raw <- rbindlist(lapply(files, function(f) {
+  d <- fread(f)
+  d[, RecordID := as.integer(tools::file_path_sans_ext(basename(f)))]
+  d
+}))
+
+outcomes <- fread(file.path(data_dir, "Outcomes-a.txt"))
+stopifnot(nrow(outcomes) == expected_n)
+
+dim(raw)
+
+```
+
+```{r clean}
+
+# outcomes: -1 means missing
+for (col in c("SAPS-I", "SOFA", "Length_of_stay"))
+  set(outcomes, which(outcomes[[col]] == -1), col, NA)
+
+# admission descriptors (one row per stay)
+
+static_vars <- c("Age", "Gender", "Height", "ICUType", "Weight")
+static <- dcast(raw[Time == "00:00" & Parameter %in% static_vars],
+                RecordID ~ Parameter, value.var = "Value", fun.aggregate = first)
+for (col in static_vars)
+  set(static, which(static[[col]] == -1), col, NA)
+static[, Height := NULL]   # dropped: missing for about 48% of stays
+
+# time series: remove impossible pH and Temp values
+ts <- raw[!Parameter %in% c(static_vars, "RecordID")]
+ts[Parameter == "pH"   & (Value < 6.5 | Value > 8.0), Value := NA]
+ts[Parameter == "Temp" & (Value < 25  | Value > 43),  Value := NA]
+ts[, hour := as.integer(substr(Time, 1, 2))]
+
+c(stays_with_ts = uniqueN(ts$RecordID), n_rows = nrow(ts), n_NA = sum(is.na(ts$Value)))
+```
+
+```{r run-checkpoint1}
+
+source(here::here("checkpoint1.R"))
+
+```
+
+```{r wide-clean}
+
+summary_long <- l_clean[!is.na(Value), .(
+  count = .N,
+  first = first(Value[!is.na(Value)]),
+  last  = last(Value[!is.na(Value)]),
+  min   = min(Value, na.rm = TRUE),
+  max   = max(Value, na.rm = TRUE),
+  mean  = mean(Value, na.rm = TRUE)
+), by = .(RecordID, Parameter)]
+
+summary_long_melt <- melt(summary_long, id.vars = c("RecordID", "Parameter"),
+                          variable.name = "stat", value.name = "value")
+summary_long_melt[, colname := paste(Parameter, stat, sep = "_")]
+
+wide <- dcast(summary_long_melt, RecordID ~ colname, value.var = "value")
+
+#to keep 4000 participants
+
+wide <- merge(outcomes, wide, by = "RecordID", all.x = TRUE)
+for (col in grep("_count$", names(wide), value = TRUE))
+  set(wide, which(is.na(wide[[col]])), col, 0)
+stopifnot(nrow(wide) == expected_n)
+
+dim(wide)
+range(wide$pH_max, na.rm = TRUE)
+
+```
+
+```{r check-height}
+h <- raw[Time == "00:00" & Parameter == "Height" & Value > 0, Value]
+c(impossible_heights = sum(h < 100 | h > 230), plausible_heights = sum(h >= 100 & h <= 230))
+
+# of the 4000, there are 16 impossible heights and 2090 plausible, 1,894 stays had no height at all, so Height was dropped. About 50% has no height so it was dropped
+
+
+```
+
+
+## 2.2 Predictors
+
+```{r model-table}
+
+worst_cols <- c("GCS_min", "HR_max", "MAP_min", "Temp_min", "Temp_max", "pH_min",
+                "Lactate_max", "Creatinine_max", "BUN_max", "Platelets_min",
+                "WBC_max", "HCO3_min", "Bilirubin_max", "Albumin_min", "Glucose_max")
+
+last_cols  <- c("GCS_last", "MAP_last", "Creatinine_last")
+
+count_cols <- c("Lactate_count", "TroponinT_count", "MechVent_count",
+                "TroponinI_count", "Cholesterol_count", "RespRate_count")
+
+# trends: last reading minus first reading
+
+wide[, GCS_trend := GCS_last - GCS_first]
+wide[, Creatinine_trend := Creatinine_last - Creatinine_first]
+
+# baseline predictors
+
+base <- static[, .(RecordID, Age, Gender, ICUType, Weight)]
+base[, Gender := factor(Gender, levels = c(0, 1), labels = c("Female", "Male"))]
+base[, ICUType := factor(ICUType, levels = 1:4, labels = c("CCU", "CSRU", "MICU", "SICU"))]
+
+model_tab <- merge(
+  wide[, c("RecordID", worst_cols, last_cols, "GCS_trend", "Creatinine_trend",
+           count_cols, "In-hospital_death", "SAPS-I", "SOFA"), with = FALSE],
+  base, by = "RecordID")
+setnames(model_tab, c("In-hospital_death", "SAPS-I", "SOFA"), c("death", "saps1", "sofa"))
+
+stopifnot(nrow(model_tab) == expected_n, !anyDuplicated(model_tab$RecordID))
+predictor_cols <- setdiff(names(model_tab), c("RecordID", "death", "saps1", "sofa"))
+
+dim(model_tab)
+length(predictor_cols)
+table(model_tab$death)
+
+```
+
+
+## 2.3 Cross-validation design
+
+```{r cv-folds}
+
+# Modeling data: predictors, an ID column, and the outcome
+d_a <- as.data.frame(model_tab[, ..predictor_cols])
+d_a$row_id <- seq_len(nrow(d_a))
+d_a$death  <- factor(model_tab$death, levels = c(1, 0))   # "1" (died) is the event
+
+set.seed(707)
+folds <- vfold_cv(d_a, v = 5, strata = death)
+
+# Deaths in each held-out fold
+sapply(folds$splits, function(s) sum(assessment(s)$death == "1"))
+
+```
+```{r benchmarks}
+
+# row numbers of the stays held out in each fold
+
+fold_ids <- lapply(folds$splits, function(s) assessment(s)$row_id)
+
+bench_auc <- function(score) {
+  sapply(fold_ids, function(ids) {
+    y    <- model_tab$death[ids]
+    x    <- score[ids]
+    keep <- !is.na(x)
+    as.numeric(pROC::auc(y[keep], x[keep], levels = c(0, 1), direction = "<"))
+  })
+}
+
+bench <- data.table(fold = 1:5,
+                    saps1 = bench_auc(model_tab$saps1),
+                    sofa  = bench_auc(model_tab$sofa))
+bench
+sapply(bench[, .(saps1, sofa)], function(v) c(mean = mean(v), sd = sd(v)))
+
+# How many stays lack each score?
+c(saps1_missing = sum(is.na(model_tab$saps1)), sofa_missing = sum(is.na(model_tab$sofa)))
+
+
+```
 
 ```{r}
-mean(c(0, 1, 1, 0))
+
+# confirming AUROCs near 0.6 to 0.65 aren't backward 
+# patients who died have higher median scores on both
+
+model_tab[, .(median_saps1 = median(saps1, na.rm = TRUE),
+              median_sofa  = median(sofa,  na.rm = TRUE)), by = death]
+```
+
+
+## 2.4 Model 1: regularized logistic regression
+
+
+```{r recipe}
+
+rec <- recipe(death ~ ., data = d_a) |>
+  update_role(row_id, new_role = "id") |>                    # keep the ID, never use it
+  step_indicate_na(MAP_min, pH_min, Bilirubin_max, Albumin_min) |>  # "was it measured" flags
+  step_impute_median(all_numeric_predictors()) |>            # medians from the training fold
+  step_impute_mode(all_nominal_predictors()) |>
+  step_dummy(all_nominal_predictors()) |>                    # sex and ICU type to 0/1 columns
+  step_zv(all_predictors()) |>                               # drop constant columns
+  step_normalize(all_numeric_predictors())                   # same scale for the penalty
+
+dim(bake(prep(rec), new_data = NULL))
+
+```
+
+```{r lasso-setup}
+
+spec <- logistic_reg(penalty = tune(), mixture = 1) |> set_engine("glmnet")
+wf   <- workflow() |> add_recipe(rec) |> add_model(spec)
+
+grid <- tibble(penalty = 10^seq(-4, -1, length.out = 20))
+
+set.seed(707)
+inner <- lapply(folds$splits, function(s) vfold_cv(analysis(s), v = 5, strata = death))
+
+```
+
+```{r lasso-run}
+
+lasso_res <- lapply(1:5, function(k) {
+  outer_split <- folds$splits[[k]]
+  tuned <- tune_grid(wf, resamples = inner[[k]], grid = grid,
+                     metrics = metric_set(mn_log_loss))
+  best  <- select_best(tuned, metric = "mn_log_loss")
+  fit_k <- fit(finalize_workflow(wf, best), analysis(outer_split))
+  pred  <- augment(fit_k, assessment(outer_split))
+  coefs <- tidy(fit_k) |> dplyr::filter(term != "(Intercept)", estimate != 0)
+  list(
+    oof = data.table(row_id = pred$row_id, fold = k, model = "lasso",
+                     pred = pred$.pred_1, death = as.integer(as.character(pred$death))),
+    auc = roc_auc(pred, death, .pred_1)$.estimate,
+    penalty = best$penalty,
+    kept = coefs$term
+  )
+})
+
+lasso_auc <- sapply(lasso_res, `[[`, "auc")
+data.table(fold = 1:5, auc = lasso_auc,
+           penalty = sapply(lasso_res, `[[`, "penalty"),
+           n_kept  = sapply(lasso_res, function(r) length(r$kept)))
+c(mean = mean(lasso_auc), sd = sd(lasso_auc))
+
+# stability: in how many of the 5 folds was each predictor kept?
+
+sort(table(unlist(lapply(lasso_res, `[[`, "kept"))), decreasing = TRUE)
+```
+```{r lasso-final}
+
+# final LASSO refit and coefficient plot
+
+#| fig-height: 8
+set.seed(707)
+tuned_all <- tune_grid(wf, resamples = vfold_cv(d_a, v = 5, strata = death),
+                       grid = grid, metrics = metric_set(mn_log_loss))
+best_all    <- select_best(tuned_all, metric = "mn_log_loss")
+lasso_final <- fit(finalize_workflow(wf, best_all), d_a)
+
+coef_tab <- tidy(lasso_final) |>
+  dplyr::filter(term != "(Intercept)") |>
+  dplyr::mutate(estimate = -estimate)   # tidy() is for survival; flip to death
+
+ggplot(coef_tab, aes(x = estimate, y = reorder(term, estimate))) +
+  geom_col() +
+  geom_vline(xintercept = 0) +
+  labs(x = "LASSO coefficient: log odds of death per 1 SD of the predictor", y = NULL)
+
+# age has long positive bar
+# ICUType_CSRU is positive
+# BUN_max, Lactate_max, Bilirubin_max and HR_max all positive (higher equals sicker)
+
+```
+
+```{r}
+
+model_tab[, .(mean_age = mean(Age, na.rm = TRUE)), by = death]
+
+```
+
+
+## 2.5 Model 2: splines or GAM
+
+```{r gam-cv}
+
+gam_vars <- c("Age", "Weight", "GCS_last", "HR_max", "Temp_min",
+              "BUN_max", "WBC_max", "Platelets_min", "HCO3_min", "Glucose_max")
+
+gam_formula <- as.formula(paste("death01 ~ ICUType +",
+                                paste0("s(", gam_vars, ")", collapse = " + ")))
+
+
+gam_res <- lapply(1:5, function(k) {
+  tr <- as.data.table(analysis(folds$splits[[k]]))
+  te <- as.data.table(assessment(folds$splits[[k]]))
+  tr[, death01 := as.integer(death == "1")]
+  te[, death01 := as.integer(death == "1")]
+  for (v in gam_vars) {                       # medians from the training fold only
+    med <- median(tr[[v]], na.rm = TRUE)
+    set(tr, which(is.na(tr[[v]])), v, med)
+    set(te, which(is.na(te[[v]])), v, med)
+  }
+  fit <- mgcv::gam(gam_formula, family = binomial, data = tr, method = "REML")
+  p <- as.numeric(predict(fit, newdata = te, type = "response"))
+  list(oof = data.table(row_id = te$row_id, fold = k, model = "gam",
+                        pred = p, death = te$death01),
+       auc = as.numeric(pROC::auc(te$death01, p, levels = c(0, 1), direction = "<")))
+})
+gam_auc <- sapply(gam_res, `[[`, "auc")
+gam_auc
+c(mean = mean(gam_auc), sd = sd(gam_auc))
+
+```
+```{r gam-final}
+
+gam_all <- as.data.table(d_a)
+gam_all[, death01 := as.integer(death == "1")]
+for (v in gam_vars)
+  set(gam_all, which(is.na(gam_all[[v]])), v, median(gam_all[[v]], na.rm = TRUE))
+
+gam_fit <- mgcv::gam(gam_formula, family = binomial, data = gam_all, method = "REML")
+round(summary(gam_fit)$s.table[, c("edf", "p-value")], 3)
+
+```
+```{r gam-plots}
+
+or_curve <- function(var, ref) {
+  x <- seq(quantile(gam_all[[var]], 0.01), quantile(gam_all[[var]], 0.99), length.out = 100)
+  g <- as.data.frame(gam_all)[rep(1, length(x) + 1), ]
+  g[[var]] <- c(x, ref)
+  Xp  <- predict(gam_fit, newdata = g, type = "lpmatrix")
+  Xd  <- sweep(Xp[-nrow(Xp), , drop = FALSE], 2, Xp[nrow(Xp), ])
+  est <- as.vector(Xd %*% coef(gam_fit))
+  se  <- sqrt(rowSums((Xd %*% vcov(gam_fit)) * Xd))
+  data.frame(x = x, or = exp(est), lo = exp(est - 1.96 * se), hi = exp(est + 1.96 * se))
+}
+
+plot_or <- function(var, ref) {
+  ggplot(or_curve(var, ref), aes(x, or)) +
+    geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.2) +
+    geom_line() +
+    geom_hline(yintercept = 1, linetype = "dashed") +
+    scale_y_log10() +
+    labs(x = var, y = "Odds ratio of death", subtitle = paste("Reference:", var, "=", ref))
+}
+
+plot_or("GCS_last", 15)
+plot_or("BUN_max", 20)
+plot_or("Platelets_min", 200)
+plot_or("Age", 65)
+
+```
+
+## 2.6 Model 3: tree ensemble
+
+```{r rf-run}
+
+rec_rf <- recipe(death ~ ., data = d_a) |>
+  update_role(row_id, new_role = "id") |>
+  step_indicate_na(MAP_min, pH_min, Bilirubin_max, Albumin_min) |>
+  step_impute_median(all_numeric_predictors()) |>
+  step_impute_mode(all_nominal_predictors())
+
+rf_spec <- rand_forest(mtry = tune(), min_n = tune(), trees = 500) |>
+  set_engine("ranger", seed = 707) |>
+  set_mode("classification")
+rf_wf   <- workflow() |> add_recipe(rec_rf) |> add_model(rf_spec)
+rf_grid <- expand.grid(mtry = c(3, 6, 10), min_n = c(10, 30, 60))
+
+rf_res <- lapply(1:5, function(k) {
+  outer_split <- folds$splits[[k]]
+  tuned <- tune_grid(rf_wf, resamples = inner[[k]], grid = rf_grid,
+                     metrics = metric_set(mn_log_loss))
+  best  <- select_best(tuned, metric = "mn_log_loss")
+  fit_k <- fit(finalize_workflow(rf_wf, best), analysis(outer_split))
+  pred  <- augment(fit_k, assessment(outer_split))
+  list(oof = data.table(row_id = pred$row_id, fold = k, model = "rf",
+                        pred = pred$.pred_1, death = as.integer(as.character(pred$death))),
+       auc = roc_auc(pred, death, .pred_1)$.estimate,
+       mtry = best$mtry, min_n = best$min_n)
+})
+
+rf_auc <- sapply(rf_res, `[[`, "auc")
+data.table(fold = 1:5, auc = rf_auc,
+           mtry = sapply(rf_res, `[[`, "mtry"), min_n = sapply(rf_res, `[[`, "min_n"))
+c(mean = mean(rf_auc), sd = sd(rf_auc))
+
+```
+
+## 2.7 Comparison and final model
+
+```{r comparison}
+
+auc_tab <- data.table(
+  fold    = 1:5,
+  SAPS_I  = bench$saps1,
+  SOFA    = bench$sofa,
+  LASSO   = lasso_auc,
+  GAM     = gam_auc,
+  Forest  = rf_auc
+)
+summary_tab <- rbind(auc_tab[, lapply(.SD, mean), .SDcols = !"fold"][, stat := "mean"],
+                     auc_tab[, lapply(.SD, sd),   .SDcols = !"fold"][, stat := "sd"])
+knitr::kable(auc_tab, digits = 3, caption = "AUROC by held-out fold")
+knitr::kable(summary_tab, digits = 3, caption = "Mean and SD across folds")
+
+```
+
+```{r roc-plot}
+
+n <- nrow(model_tab)
+oof <- rbindlist(c(lapply(lasso_res, `[[`, "oof"),
+                   lapply(gam_res,   `[[`, "oof"),
+                   lapply(rf_res,    `[[`, "oof")))
+oof <- rbind(oof,
+  data.table(row_id = seq_len(n), fold = NA, model = "saps1",
+             pred = model_tab$saps1, death = as.integer(model_tab$death))[!is.na(pred)],
+  data.table(row_id = seq_len(n), fold = NA, model = "sofa",
+             pred = model_tab$sofa,  death = as.integer(model_tab$death))[!is.na(pred)])
+
+oof[, model := factor(model, levels = c("lasso", "gam", "rf", "saps1", "sofa"),
+                      labels = c("LASSO", "GAM", "Random forest", "SAPS-I", "SOFA"))]
+
+roc_list <- lapply(split(oof, oof$model), function(d)
+  pROC::roc(d$death, d$pred, levels = c(0, 1), direction = "<", quiet = TRUE))
+
+pROC::ggroc(roc_list, legacy.axes = TRUE) +
+  geom_abline(linetype = "dashed") +
+  labs(colour = "Model", x = "1 - Specificity", y = "Sensitivity")
+
+sapply(roc_list, function(r) round(as.numeric(pROC::auc(r)), 3))
+
+```
+
+```{r save-outputs}
+
+saveRDS(lasso_final, file.path(out_dir, "cp2_final_model.rds"))  
+# fitted workflow: recipe + model
+
+fwrite(oof, file.path(out_dir, "cp2_oof_predictions.csv"))
+dir(out_dir, pattern = "cp2_")
 ```
