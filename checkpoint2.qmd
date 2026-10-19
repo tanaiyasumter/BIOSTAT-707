@@ -10,7 +10,7 @@ execute:
 
 ## AI-use statement
 
-(To write last, in your own words: which tools, what for, how you checked the output, and the pluses and minuses.)
+do last
 
 ## Setup
 
@@ -77,6 +77,7 @@ c(stays_with_ts = uniqueN(ts$RecordID), n_rows = nrow(ts), n_NA = sum(is.na(ts$V
 
 ```{r run-checkpoint1}
 
+#| include: false
 source(here::here("checkpoint1.R"))
 
 ```
@@ -272,9 +273,7 @@ c(mean = mean(lasso_auc), sd = sd(lasso_auc))
 
 sort(table(unlist(lapply(lasso_res, `[[`, "kept"))), decreasing = TRUE)
 ```
-```{r lasso-final}
-
-# final LASSO refit and coefficient plot
+```{r lasso-final, final LASSO refit and coefficient plot}
 
 #| fig-height: 8
 set.seed(707)
