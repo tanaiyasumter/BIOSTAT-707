@@ -13,6 +13,8 @@ r-ggplot2 = "*"
 r-gtsummary = "*"
 r-naniar = "*"
 r-here = "*"
+quarto = ">=1.9.38,<2"
 
 [tasks]
 checkpoint1 = "Rscript checkpoint1.R"
+checkpoint2 = "quarto render checkpoint2.qmd --output-dir output"

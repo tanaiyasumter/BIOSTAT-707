@@ -1,0 +1,11 @@
+---
+title: "Checkpoint 2 test"
+format: html
+---
+
+## does it work for me
+If you can read this, Quarto works.
+
+```{r}
+mean(c(0, 1, 1, 0))
+```

@@ -1,5 +1,6 @@
 data/
-output/
+output/*
+!output/checkpoint2.html
 .pixi/
 .Rhistory
 .Rproj.user/
