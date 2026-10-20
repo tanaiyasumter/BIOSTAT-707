@@ -2,16 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.7.32">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Checkpoint 2 test</title>
+<title>Checkpoint 2: Building and comparing models on set-a</title>
 <style>
-/* Default styles provided by pandoc.
-** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
-*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -68,23 +65,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="checkpoint2_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="checkpoint2_files/libs/quarto-html/anchor.min.js"></script>
 <link href="checkpoint2_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="checkpoint2_files/libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="checkpoint2_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="checkpoint2_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="checkpoint2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="checkpoint2_files/libs/bootstrap/bootstrap-986a9380f19a7ecba810064df2911a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="checkpoint2_files/libs/bootstrap/bootstrap-bb462d781dde1847d9e3ccf7736099dd.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
 
 </head>
 
-<body class="fullcontent quarto-light">
+<body class="quarto-light">
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#ai-use-statement" id="toc-ai-use-statement" class="nav-link active" data-scroll-target="#ai-use-statement">AI-use statement</a></li>
+  <li><a href="#acronymns" id="toc-acronymns" class="nav-link" data-scroll-target="#acronymns">Acronymns</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
+  <li><a href="#overview" id="toc-overview" class="nav-link" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#the-modeling-table" id="toc-the-modeling-table" class="nav-link" data-scroll-target="#the-modeling-table">2.1 The modeling table</a></li>
+  <li><a href="#predictors" id="toc-predictors" class="nav-link" data-scroll-target="#predictors">2.2 Predictors</a></li>
+  <li><a href="#cross-validation-design" id="toc-cross-validation-design" class="nav-link" data-scroll-target="#cross-validation-design">2.3 Cross-validation design</a></li>
+  <li><a href="#model-1-regularized-logistic-regression" id="toc-model-1-regularized-logistic-regression" class="nav-link" data-scroll-target="#model-1-regularized-logistic-regression">2.4 Model 1: regularized logistic regression</a></li>
+  <li><a href="#model-2-gam" id="toc-model-2-gam" class="nav-link" data-scroll-target="#model-2-gam">2.5 Model 2: GAM</a></li>
+  <li><a href="#model-3-tree-ensemble" id="toc-model-3-tree-ensemble" class="nav-link" data-scroll-target="#model-3-tree-ensemble">2.6 Model 3: tree ensemble</a></li>
+  <li><a href="#comparison-and-final-model" id="toc-comparison-and-final-model" class="nav-link" data-scroll-target="#comparison-and-final-model">2.7 Comparison and final model</a></li>
+  </ul>
+</nav>
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Checkpoint 2 test</h1>
+<h1 class="title">Checkpoint 2: Building and comparing models on set-a</h1>
 </div>
 
 
@@ -101,14 +116,693 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="does-it-work-for-me" class="level2">
-<h2 class="anchored" data-anchor-id="does-it-work-for-me">does it work for me</h2>
-<p>If you can read this, Quarto works.</p>
+<section id="ai-use-statement" class="level2">
+<h2 class="anchored" data-anchor-id="ai-use-statement">AI-use statement</h2>
+<p>Claude (Anthropic) and Copilot were used to assist me with pixi (pixi.toml, pixi.lock etc.), pushing to github, and generating code. With code it assisted me in loading in data, generating code for benchmarks, LASSO, GAM and plots. It was used to help me understand certain parts of the checklist I miss understood. It also helped me articulate some statements that I couldn’t properly word. Claude helped me diagnose render failures and gave me pixi add commands. The first failure was Quarto couldn’t handle the spaces in my old folder so Claude gave me a command to move the project to a new folder and rebuilt .pixi. Every command was ran and checked. I noticed that packages had to be in pixi for the graders, and decided to leave the code alone and report the failure to Dr.&nbsp;Rozen. I worked with Claude to look at predcitors. I finalized all modeling decisions and variables used. I wrote interpretations.</p>
+<p>Positives: debugs faster, can directly answer simple questions and debugging questions</p>
+<p>Negatives: gives me extra things that i don’t need, makes wrong claims that i caught (did a few times)</p>
+</section>
+<section id="acronymns" class="level2">
+<h2 class="anchored" data-anchor-id="acronymns">Acronymns</h2>
+<p><strong><em>ICU:</em></strong> Intensive care unit <strong><em>SAPS-I:</em></strong> Simplified Acute Physiology Score I <strong><em>SOFA:</em></strong> Sequential Organ Failure Assessment <strong><em>CV:</em></strong> Cross-validation <strong><em>BUN:</em></strong> Blood urea nitrogen <strong><em>MAP:</em></strong> Mean arterial pressure <strong><em>pH:</em></strong> Measure of blood acidity (potential of hydrogen) <strong><em>AUROC:</em></strong> Area under the receiver operating characteristic curve <strong><em>LASSO:</em></strong> Least Absolute Shrinkage and Selection Operator <strong><em>GCS:</em></strong> Glasgow Coma Scale <strong><em>HR:</em></strong> Heart rate <strong><em>GAM:</em></strong> Generalized additive model</p>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.5</code></pre>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>({</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(data.table)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(tidymodels)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">707</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>root <span class="ot">&lt;-</span> here<span class="sc">::</span><span class="fu">here</span>()</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>data_dir <span class="ot">&lt;-</span> <span class="fu">file.path</span>(root, <span class="st">"data"</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>out_dir <span class="ot">&lt;-</span> <span class="fu">file.path</span>(root, <span class="st">"output"</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(out_dir, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>expected_n <span class="ot">&lt;-</span> <span class="dv">4000</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">Overview</h2>
+<p>This analysis/report builds predictors from the first 48 hours of Intensive care unit (ICU) data in the PhysioNet Challenge 2012 set-a (4000 stays). Our outcome is in-hospital death.It compares three models against two clinical benchmarks, Simplified Acute Physiology Score I (SAPS-I) and (Sequential Organ Failure Assessment (SOFA) using the same 5-fold cross-validation (CV).</p>
+</section>
+<section id="the-modeling-table" class="level2">
+<h2 class="anchored" data-anchor-id="the-modeling-table">2.1 The modeling table</h2>
+<p>The modeling table is built from Checkpoint 1 wide table(count, first, last, minimum, maximum and mean of each variable over the 48 hours) and has one row per stay. It is joined to In-hospital_death from Outcomes-a.txt by RecordID. Checkpoint 1 wide table used raw values, so here it is rebuilt from the cleaned long table. Every model gives one prediction per stay, so it can be compared directly with SAPS-I and SOFA. The code checks that no Record ID is duplicated.</p>
+<p>Of the 4000 stays, 554 (13.9%) end in hospital death.</p>
+<p>The cleaning decisions here are the same from Checkpoint 1: -1 is now missing, pH outside 6.5 to 8.0 and temperature outside 25 to 43 degrees became missing, heart-rate and blood-pressure values of 0 were left unchanged (zeros seen rarely). 1,894 stays had no height and 16 of the 2,106 recorded heights were impossible (outside 100 to 230 cm) so Height was dropped and we kept Weight (missing in 326 stays).</p>
+<p>SAPS-I and SOFA are used only as benchmarks so where -1 was coded was set to missing. Three stays have no time series but remain with the 0 counts and missing summaries.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">file.path</span>(data_dir, <span class="st">"set-a"</span>), <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">length</span>(files) <span class="sc">==</span> expected_n)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>raw <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(files, <span class="cf">function</span>(f) {</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">fread</span>(f)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  d[, RecordID <span class="sc">:</span><span class="er">=</span> <span class="fu">as.integer</span>(tools<span class="sc">::</span><span class="fu">file_path_sans_ext</span>(<span class="fu">basename</span>(f)))]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  d</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>outcomes <span class="ot">&lt;-</span> <span class="fu">fread</span>(<span class="fu">file.path</span>(data_dir, <span class="st">"Outcomes-a.txt"</span>))</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(outcomes) <span class="sc">==</span> expected_n)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(raw)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># outcomes: -1 means missing</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (col <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"SAPS-I"</span>, <span class="st">"SOFA"</span>, <span class="st">"Length_of_stay"</span>))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set</span>(outcomes, <span class="fu">which</span>(outcomes[[col]] <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>), col, <span class="cn">NA</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># admission descriptors (one row per stay)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>static_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Age"</span>, <span class="st">"Gender"</span>, <span class="st">"Height"</span>, <span class="st">"ICUType"</span>, <span class="st">"Weight"</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>static <span class="ot">&lt;-</span> <span class="fu">dcast</span>(raw[Time <span class="sc">==</span> <span class="st">"00:00"</span> <span class="sc">&amp;</span> Parameter <span class="sc">%in%</span> static_vars],</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                RecordID <span class="sc">~</span> Parameter, <span class="at">value.var =</span> <span class="st">"Value"</span>, <span class="at">fun.aggregate =</span> first)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (col <span class="cf">in</span> static_vars)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set</span>(static, <span class="fu">which</span>(static[[col]] <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>), col, <span class="cn">NA</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>static[, Height <span class="sc">:</span><span class="er">=</span> <span class="cn">NULL</span>]   <span class="co"># dropped: missing for about 48% of stays</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># time series: remove impossible pH and Temp values</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>ts <span class="ot">&lt;-</span> raw[<span class="sc">!</span>Parameter <span class="sc">%in%</span> <span class="fu">c</span>(static_vars, <span class="st">"RecordID"</span>)]</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>ts[Parameter <span class="sc">==</span> <span class="st">"pH"</span>   <span class="sc">&amp;</span> (Value <span class="sc">&lt;</span> <span class="fl">6.5</span> <span class="sc">|</span> Value <span class="sc">&gt;</span> <span class="fl">8.0</span>), Value <span class="sc">:</span><span class="er">=</span> <span class="cn">NA</span>]</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>ts[Parameter <span class="sc">==</span> <span class="st">"Temp"</span> <span class="sc">&amp;</span> (Value <span class="sc">&lt;</span> <span class="dv">25</span>  <span class="sc">|</span> Value <span class="sc">&gt;</span> <span class="dv">43</span>),  Value <span class="sc">:</span><span class="er">=</span> <span class="cn">NA</span>]</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>ts[, hour <span class="sc">:</span><span class="er">=</span> <span class="fu">as.integer</span>(<span class="fu">substr</span>(Time, <span class="dv">1</span>, <span class="dv">2</span>))]</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">stays_with_ts =</span> <span class="fu">uniqueN</span>(ts<span class="sc">$</span>RecordID), <span class="at">n_rows =</span> <span class="fu">nrow</span>(ts), <span class="at">n_NA =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(ts<span class="sc">$</span>Value)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>summary_long <span class="ot">&lt;-</span> l_clean[<span class="sc">!</span><span class="fu">is.na</span>(Value), .(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">count =</span> .N,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">first =</span> <span class="fu">first</span>(Value[<span class="sc">!</span><span class="fu">is.na</span>(Value)]),</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">last  =</span> <span class="fu">last</span>(Value[<span class="sc">!</span><span class="fu">is.na</span>(Value)]),</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">min   =</span> <span class="fu">min</span>(Value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">max   =</span> <span class="fu">max</span>(Value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean  =</span> <span class="fu">mean</span>(Value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>), by <span class="ot">=</span> .(RecordID, Parameter)]</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>summary_long_melt <span class="ot">&lt;-</span> <span class="fu">melt</span>(summary_long, <span class="at">id.vars =</span> <span class="fu">c</span>(<span class="st">"RecordID"</span>, <span class="st">"Parameter"</span>),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">variable.name =</span> <span class="st">"stat"</span>, <span class="at">value.name =</span> <span class="st">"value"</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>summary_long_melt[, colname <span class="sc">:</span><span class="er">=</span> <span class="fu">paste</span>(Parameter, stat, <span class="at">sep =</span> <span class="st">"_"</span>)]</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>wide <span class="ot">&lt;-</span> <span class="fu">dcast</span>(summary_long_melt, RecordID <span class="sc">~</span> colname, <span class="at">value.var =</span> <span class="st">"value"</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">#to keep 4000 participants</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>wide <span class="ot">&lt;-</span> <span class="fu">merge</span>(outcomes, wide, <span class="at">by =</span> <span class="st">"RecordID"</span>, <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (col <span class="cf">in</span> <span class="fu">grep</span>(<span class="st">"_count$"</span>, <span class="fu">names</span>(wide), <span class="at">value =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set</span>(wide, <span class="fu">which</span>(<span class="fu">is.na</span>(wide[[col]])), col, <span class="dv">0</span>)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(wide) <span class="sc">==</span> expected_n)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(wide)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="fu">range</span>(wide<span class="sc">$</span>pH_max, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> raw[Time <span class="sc">==</span> <span class="st">"00:00"</span> <span class="sc">&amp;</span> Parameter <span class="sc">==</span> <span class="st">"Height"</span> <span class="sc">&amp;</span> Value <span class="sc">&gt;</span> <span class="dv">0</span>, Value]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">impossible_heights =</span> <span class="fu">sum</span>(h <span class="sc">&lt;</span> <span class="dv">100</span> <span class="sc">|</span> h <span class="sc">&gt;</span> <span class="dv">230</span>), <span class="at">plausible_heights =</span> <span class="fu">sum</span>(h <span class="sc">&gt;=</span> <span class="dv">100</span> <span class="sc">&amp;</span> h <span class="sc">&lt;=</span> <span class="dv">230</span>))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># of the 4000, there are 16 impossible heights and 2090 plausible, 1,894 stays had no height at all, so Height was dropped. About 50% has no height so it was dropped</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="predictors" class="level2">
+<h2 class="anchored" data-anchor-id="predictors">2.2 Predictors</h2>
+<p>After dummy-coding ICU type, and adding four missingness flags, the model sees 36 columns. Only data from hours 0–48 are used, Length_of_stay and Survival are not predictors because they are only known after the outcome (leakage). SAPS-I, SOFA and RecordID are excluded as predictors as well. ICUType and Gender are categorical.</p>
+<p>17 of the 30+ time series variables were left out: ALP, ALT, AST, DiasABP, FiO2, HCT, K, Mg, Na, NIDiasABP, NIMAP, NISysABP, PaCO2, PaO2, SaO2, SysABP and Urine. The predictors chosen, cover the main organ systems that drive ICU mortality using the same kinds of measurements that SAPS-I and SOFA are built from. They were not left out because of missingness (most were measured for over 65% of stays). They were left out to keep the model small and interpretable. For most variables I used the worst value in the 48 hours because it would help signal to sicker patients. Variables were measured for under 30% of stays (5–28%) (troponin I, troponin T, cholesterol and respiratory rate) enter only as counts, along with lactate and mechanical ventilation. These counts are included because a test or treatment is ordered when a clinician is worried, so whether it was done carries information. These 17 variables weren’t left out due to missingness because most were measured for over 65% of stays. They were dropped to keep the model small and interpretable. Height was dropped for being about 47% missing.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>worst_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"GCS_min"</span>, <span class="st">"HR_max"</span>, <span class="st">"MAP_min"</span>, <span class="st">"Temp_min"</span>, <span class="st">"Temp_max"</span>, <span class="st">"pH_min"</span>,</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                <span class="st">"Lactate_max"</span>, <span class="st">"Creatinine_max"</span>, <span class="st">"BUN_max"</span>, <span class="st">"Platelets_min"</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                <span class="st">"WBC_max"</span>, <span class="st">"HCO3_min"</span>, <span class="st">"Bilirubin_max"</span>, <span class="st">"Albumin_min"</span>, <span class="st">"Glucose_max"</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>last_cols  <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"GCS_last"</span>, <span class="st">"MAP_last"</span>, <span class="st">"Creatinine_last"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>count_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Lactate_count"</span>, <span class="st">"TroponinT_count"</span>, <span class="st">"MechVent_count"</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                <span class="st">"TroponinI_count"</span>, <span class="st">"Cholesterol_count"</span>, <span class="st">"RespRate_count"</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># trends: last reading minus first reading</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>wide[, GCS_trend <span class="sc">:</span><span class="er">=</span> GCS_last <span class="sc">-</span> GCS_first]</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>wide[, Creatinine_trend <span class="sc">:</span><span class="er">=</span> Creatinine_last <span class="sc">-</span> Creatinine_first]</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># baseline predictors</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> static[, .(RecordID, Age, Gender, ICUType, Weight)]</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>base[, Gender <span class="sc">:</span><span class="er">=</span> <span class="fu">factor</span>(Gender, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Female"</span>, <span class="st">"Male"</span>))]</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>base[, ICUType <span class="sc">:</span><span class="er">=</span> <span class="fu">factor</span>(ICUType, <span class="at">levels =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"CCU"</span>, <span class="st">"CSRU"</span>, <span class="st">"MICU"</span>, <span class="st">"SICU"</span>))]</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>model_tab <span class="ot">&lt;-</span> <span class="fu">merge</span>(</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  wide[, <span class="fu">c</span>(<span class="st">"RecordID"</span>, worst_cols, last_cols, <span class="st">"GCS_trend"</span>, <span class="st">"Creatinine_trend"</span>,</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>           count_cols, <span class="st">"In-hospital_death"</span>, <span class="st">"SAPS-I"</span>, <span class="st">"SOFA"</span>), <span class="at">with =</span> <span class="cn">FALSE</span>],</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  base, <span class="at">by =</span> <span class="st">"RecordID"</span>)</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="fu">setnames</span>(model_tab, <span class="fu">c</span>(<span class="st">"In-hospital_death"</span>, <span class="st">"SAPS-I"</span>, <span class="st">"SOFA"</span>), <span class="fu">c</span>(<span class="st">"death"</span>, <span class="st">"saps1"</span>, <span class="st">"sofa"</span>))</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(model_tab) <span class="sc">==</span> expected_n, <span class="sc">!</span><span class="fu">anyDuplicated</span>(model_tab<span class="sc">$</span>RecordID))</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>predictor_cols <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(<span class="fu">names</span>(model_tab), <span class="fu">c</span>(<span class="st">"RecordID"</span>, <span class="st">"death"</span>, <span class="st">"saps1"</span>, <span class="st">"sofa"</span>))</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(model_tab)</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(predictor_cols)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(model_tab<span class="sc">$</span>death)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>pred_tab <span class="ot">&lt;-</span> <span class="fu">data.table</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Group =</span> <span class="fu">c</span>(<span class="st">"Baseline"</span>, <span class="st">"Worst value in 48 h"</span>, <span class="st">"Last value"</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Trend (last minus first)"</span>, <span class="st">"Number of measurements"</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Predictors =</span> <span class="fu">c</span>(<span class="st">"Age, sex, ICU type, weight"</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">paste</span>(worst_cols, <span class="at">collapse =</span> <span class="st">", "</span>),</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">paste</span>(last_cols, <span class="at">collapse =</span> <span class="st">", "</span>),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"GCS_trend, Creatinine_trend"</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">paste</span>(count_cols, <span class="at">collapse =</span> <span class="st">", "</span>)),</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="fu">length</span>(worst_cols), <span class="fu">length</span>(last_cols), <span class="dv">2</span>, <span class="fu">length</span>(count_cols)),</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">Reason =</span> <span class="fu">c</span>(</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Baseline risk and case mix differ between patients and ICU types."</span>,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"The sickest reading in the window reflects peak organ dysfunction (brain, circulation, kidney, liver, blood, metabolism)."</span>,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Where the patient stood at the end of the window."</span>,</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Whether the patient was improving or worsening over the window."</span>,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">"How closely the patient was monitored, which reflects clinician concern; it is not a cause of death."</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(pred_tab<span class="sc">$</span>N) <span class="sc">==</span> <span class="fu">length</span>(predictor_cols))</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(pred_tab)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="tbl-predictors" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-predictors-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Predictors by group (30 in total).
+</figcaption>
+<div aria-describedby="tbl-predictors-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 52%">
+<col style="width: 0%">
+<col style="width: 38%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Group</th>
+<th style="text-align: left;">Predictors</th>
+<th style="text-align: right;">N</th>
+<th style="text-align: left;">Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Baseline</td>
+<td style="text-align: left;">Age, sex, ICU type, weight</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">Baseline risk and case mix differ between patients and ICU types.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Worst value in 48 h</td>
+<td style="text-align: left;">GCS_min, HR_max, MAP_min, Temp_min, Temp_max, pH_min, Lactate_max, Creatinine_max, BUN_max, Platelets_min, WBC_max, HCO3_min, Bilirubin_max, Albumin_min, Glucose_max</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: left;">The sickest reading in the window reflects peak organ dysfunction (brain, circulation, kidney, liver, blood, metabolism).</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Last value</td>
+<td style="text-align: left;">GCS_last, MAP_last, Creatinine_last</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">Where the patient stood at the end of the window.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Trend (last minus first)</td>
+<td style="text-align: left;">GCS_trend, Creatinine_trend</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Whether the patient was improving or worsening over the window.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Number of measurements</td>
+<td style="text-align: left;">Lactate_count, TroponinT_count, MechVent_count, TroponinI_count, Cholesterol_count, RespRate_count</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">How closely the patient was monitored, which reflects clinician concern; it is not a cause of death.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p><a href="#tbl-predictors" class="quarto-xref">Table&nbsp;1</a> lists the 30 predictors by group. The six measurement counts, plus flags for whether MAP, pH, bilirubin and albumin were ever measured but are included because in ICU data something is ordered because a clinician is worried, if it was done has information. Troponin I, cholesterol, troponin T, respiratory rate were measured in 30% of stays and entered as counts because imputing values for over 70% of patients can lead to misleading information. Because of how often lactate and mechanical ventilation were recorded is informative so they were entered as counts.</p>
+</section>
+<section id="cross-validation-design" class="level2">
+<h2 class="anchored" data-anchor-id="cross-validation-design">2.3 Cross-validation design</h2>
+<p>5-fold cross-validation was used on set-a with a seed set to 707 and folds stratified by death (111, 111, 111, 111 and 110 deaths per held-out fold). The same folds were used for every model to ensure that performance comparisons are not confounded by different train/test splits. The folds aren’t clustered and each stay is treated (independently) as one row. All preprocessing steps (imputation, scaling, and dummy‑coding) were refit within each training fold. Hyperparameters were tuned using nested cross‑validation (inside each outer training portion, choosing the configuration with the lowest log loss before evaluating on the outer held‑out fold). The Area Under the Receiver Operating Characteristic Curve (AUROC) is reported for each curve with its mean and standard deviation.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Modeling data: predictors, an ID column, and the outcome</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>d_a <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(model_tab[, ..predictor_cols])</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>d_a<span class="sc">$</span>row_id <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(d_a))</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>d_a<span class="sc">$</span>death  <span class="ot">&lt;-</span> <span class="fu">factor</span>(model_tab<span class="sc">$</span>death, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>))   <span class="co"># "1" (died) is the event</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">707</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>folds <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(d_a, <span class="at">v =</span> <span class="dv">5</span>, <span class="at">strata =</span> death)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Deaths in each held-out fold</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(folds<span class="sc">$</span>splits, <span class="cf">function</span>(s) <span class="fu">sum</span>(<span class="fu">assessment</span>(s)<span class="sc">$</span>death <span class="sc">==</span> <span class="st">"1"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>SAPS-I and SOFA are the raw scores, not fitted. Patients who died have higher median scores on both. Higher score means higher risk, so the score is used as the prediction stays with missing scores are excluded.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># row numbers of the stays held out in each fold</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>fold_ids <span class="ot">&lt;-</span> <span class="fu">lapply</span>(folds<span class="sc">$</span>splits, <span class="cf">function</span>(s) <span class="fu">assessment</span>(s)<span class="sc">$</span>row_id)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>bench_auc <span class="ot">&lt;-</span> <span class="cf">function</span>(score) {</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sapply</span>(fold_ids, <span class="cf">function</span>(ids) {</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    y    <span class="ot">&lt;-</span> model_tab<span class="sc">$</span>death[ids]</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    x    <span class="ot">&lt;-</span> score[ids]</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    keep <span class="ot">&lt;-</span> <span class="sc">!</span><span class="fu">is.na</span>(x)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.numeric</span>(pROC<span class="sc">::</span><span class="fu">auc</span>(y[keep], x[keep], <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">direction =</span> <span class="st">"&lt;"</span>))</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>bench <span class="ot">&lt;-</span> <span class="fu">data.table</span>(<span class="at">fold =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>                    <span class="at">saps1 =</span> <span class="fu">bench_auc</span>(model_tab<span class="sc">$</span>saps1),</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>                    <span class="at">sofa  =</span> <span class="fu">bench_auc</span>(model_tab<span class="sc">$</span>sofa))</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>bench</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(bench[, .(saps1, sofa)], <span class="cf">function</span>(v) <span class="fu">c</span>(<span class="at">mean =</span> <span class="fu">mean</span>(v), <span class="at">sd =</span> <span class="fu">sd</span>(v)))</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co"># How many stays lack each score?</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">saps1_missing =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(model_tab<span class="sc">$</span>saps1)), <span class="at">sofa_missing =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(model_tab<span class="sc">$</span>sofa)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># confirming AUROCs near 0.6 to 0.65 aren't backward </span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># patients who died have higher median scores on both</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>model_tab[, .(<span class="at">median_saps1 =</span> <span class="fu">median</span>(saps1, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>              <span class="at">median_sofa  =</span> <span class="fu">median</span>(sofa,  <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), by <span class="ot">=</span> death]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="model-1-regularized-logistic-regression" class="level2">
+<h2 class="anchored" data-anchor-id="model-1-regularized-logistic-regression">2.4 Model 1: regularized logistic regression</h2>
+<p>The Least Absolute Shrinkage and Selection Operator (LASSO) penalty was used to obtain a sparse, interpretable model with one coefficient per predictor. The penalty parameter was tuned over 20 values from 0.0001 to 0.1 and the selected values (0.0009–0.0026) are similar across folds. Mean AUROC was 0.832 (SD 0.009). 25–34 of the 36 predictors were retained per fold, with this, the model is close to standard logistic regression. Twenty predictors (age, GCS_last, lactate, BUN etc.) appeared in all five folds.</p>
+<p>Per-fold AUROCs for the LASSO are shown in the comparison table in Section 2.7. The mean was 0.832 (SD 0.009).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>rec <span class="ot">&lt;-</span> <span class="fu">recipe</span>(death <span class="sc">~</span> ., <span class="at">data =</span> d_a) <span class="sc">|&gt;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update_role</span>(row_id, <span class="at">new_role =</span> <span class="st">"id"</span>) <span class="sc">|&gt;</span>                    <span class="co"># keep the ID, never use it</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_indicate_na</span>(MAP_min, pH_min, Bilirubin_max, Albumin_min) <span class="sc">|&gt;</span>  <span class="co"># "was it measured" flags</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_impute_median</span>(<span class="fu">all_numeric_predictors</span>()) <span class="sc">|&gt;</span>            <span class="co"># medians from the training fold</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_impute_mode</span>(<span class="fu">all_nominal_predictors</span>()) <span class="sc">|&gt;</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_dummy</span>(<span class="fu">all_nominal_predictors</span>()) <span class="sc">|&gt;</span>                    <span class="co"># sex and ICU type to 0/1 columns</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_zv</span>(<span class="fu">all_predictors</span>()) <span class="sc">|&gt;</span>                               <span class="co"># drop constant columns</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_numeric_predictors</span>())                   <span class="co"># same scale for the penalty</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(<span class="fu">bake</span>(<span class="fu">prep</span>(rec), <span class="at">new_data =</span> <span class="cn">NULL</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">logistic_reg</span>(<span class="at">penalty =</span> <span class="fu">tune</span>(), <span class="at">mixture =</span> <span class="dv">1</span>) <span class="sc">|&gt;</span> <span class="fu">set_engine</span>(<span class="st">"glmnet"</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>wf   <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span> <span class="fu">add_recipe</span>(rec) <span class="sc">|&gt;</span> <span class="fu">add_model</span>(spec)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">penalty =</span> <span class="dv">10</span><span class="sc">^</span><span class="fu">seq</span>(<span class="sc">-</span><span class="dv">4</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="at">length.out =</span> <span class="dv">20</span>))</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">707</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>inner <span class="ot">&lt;-</span> <span class="fu">lapply</span>(folds<span class="sc">$</span>splits, <span class="cf">function</span>(s) <span class="fu">vfold_cv</span>(<span class="fu">analysis</span>(s), <span class="at">v =</span> <span class="dv">5</span>, <span class="at">strata =</span> death))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>lasso_res <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="cf">function</span>(k) {</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  outer_split <span class="ot">&lt;-</span> folds<span class="sc">$</span>splits[[k]]</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  tuned <span class="ot">&lt;-</span> <span class="fu">tune_grid</span>(wf, <span class="at">resamples =</span> inner[[k]], <span class="at">grid =</span> grid,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">metrics =</span> <span class="fu">metric_set</span>(mn_log_loss))</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  best  <span class="ot">&lt;-</span> <span class="fu">select_best</span>(tuned, <span class="at">metric =</span> <span class="st">"mn_log_loss"</span>)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  fit_k <span class="ot">&lt;-</span> <span class="fu">fit</span>(<span class="fu">finalize_workflow</span>(wf, best), <span class="fu">analysis</span>(outer_split))</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  pred  <span class="ot">&lt;-</span> <span class="fu">augment</span>(fit_k, <span class="fu">assessment</span>(outer_split))</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  coefs <span class="ot">&lt;-</span> <span class="fu">tidy</span>(fit_k) <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(term <span class="sc">!=</span> <span class="st">"(Intercept)"</span>, estimate <span class="sc">!=</span> <span class="dv">0</span>)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">oof =</span> <span class="fu">data.table</span>(<span class="at">row_id =</span> pred<span class="sc">$</span>row_id, <span class="at">fold =</span> k, <span class="at">model =</span> <span class="st">"lasso"</span>,</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                     <span class="at">pred =</span> pred<span class="sc">$</span>.pred_1, <span class="at">death =</span> <span class="fu">as.integer</span>(<span class="fu">as.character</span>(pred<span class="sc">$</span>death))),</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">auc =</span> <span class="fu">roc_auc</span>(pred, death, .pred_1)<span class="sc">$</span>.estimate,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">penalty =</span> best<span class="sc">$</span>penalty,</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">kept =</span> coefs<span class="sc">$</span>term</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>lasso_auc <span class="ot">&lt;-</span> <span class="fu">sapply</span>(lasso_res, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"auc"</span>)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="fu">data.table</span>(<span class="at">fold =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">auc =</span> lasso_auc,</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>           <span class="at">penalty =</span> <span class="fu">sapply</span>(lasso_res, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"penalty"</span>),</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">n_kept  =</span> <span class="fu">sapply</span>(lasso_res, <span class="cf">function</span>(r) <span class="fu">length</span>(r<span class="sc">$</span>kept)))</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">mean =</span> <span class="fu">mean</span>(lasso_auc), <span class="at">sd =</span> <span class="fu">sd</span>(lasso_auc))</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="co"># stability: in how many of the 5 folds was each predictor kept?</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="fu">sort</span>(<span class="fu">table</span>(<span class="fu">unlist</span>(<span class="fu">lapply</span>(lasso_res, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"kept"</span>))), <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Stability table shows how many of the 5 folds kept each predictor. 20 of the 36 model columns were kept in all five folds (like Age, GCS_min, GCS_last, HR_max, Lactate_max, BUN_max, Temp_min, WBC_max, MAP_last and Weight), so the selection is largely stable. Creatinine summaries were kept inconsistently (Creatinine_max in only 1 fold, Creatinine_last in 2).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">707</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>tuned_all <span class="ot">&lt;-</span> <span class="fu">tune_grid</span>(wf, <span class="at">resamples =</span> <span class="fu">vfold_cv</span>(d_a, <span class="at">v =</span> <span class="dv">5</span>, <span class="at">strata =</span> death),</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">grid =</span> grid, <span class="at">metrics =</span> <span class="fu">metric_set</span>(mn_log_loss))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>best_all    <span class="ot">&lt;-</span> <span class="fu">select_best</span>(tuned_all, <span class="at">metric =</span> <span class="st">"mn_log_loss"</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>lasso_final <span class="ot">&lt;-</span> <span class="fu">fit</span>(<span class="fu">finalize_workflow</span>(wf, best_all), d_a)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>coef_tab <span class="ot">&lt;-</span> <span class="fu">tidy</span>(lasso_final) <span class="sc">|&gt;</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(term <span class="sc">!=</span> <span class="st">"(Intercept)"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">estimate =</span> <span class="sc">-</span>estimate)   <span class="co"># tidy() is for survival; flip to death</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(coef_tab, <span class="fu">aes</span>(<span class="at">x =</span> estimate, <span class="at">y =</span> <span class="fu">reorder</span>(term, estimate))) <span class="sc">+</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">0</span>) <span class="sc">+</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"LASSO coefficient: log odds of death per 1 SD of the predictor"</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="co"># age has long positive bar</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="co"># ICUType_CSRU is positive</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co"># BUN_max, Lactate_max, Bilirubin_max and HR_max all positive (higher equals sicker)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-lasso" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-lasso-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="checkpoint2_files/figure-html/fig-lasso-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lasso-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: LASSO coefficients (log odds of death per 1 SD), refit on all of set-a.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-lasso" class="quarto-xref">Figure&nbsp;1</a> shows that Age has the longest positive bar. BUN, lactate, bilirubin and maximum heart rate are positive (higher values = sicker patients). The sign of the coefficients was flipped because the glmnet output reports the opposite level, and checked this against mean age.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>model_tab[, .(<span class="at">mean_age =</span> <span class="fu">mean</span>(Age, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), by <span class="ot">=</span> death]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="model-2-gam" class="level2">
+<h2 class="anchored" data-anchor-id="model-2-gam">2.5 Model 2: GAM</h2>
+<p>A Logistic Generalized Additive Model (GAM) was fit with smooth terms (penalized splines, smoothness chosen by REML) on 10 continuous predictors and ICUType. The predictors are: Age, Weight, GCS_last, HR_max, Temp_min, BUN_max, WBC_max, Platelets_min, HCO3_min and Glucose_max.</p>
+<p>Why were these predictors chosen: These 10 continuous predictors were chosen based on clinical grounds, covering age, nutrition, neurological status, heart, temperature, kidney, white cells, platelets, bicarbonate and glucose, and <em>most</em> of them were kept in all five LASSO folds.</p>
+<p>Missing values are filled with the training-fold median, taken from the training fold only.</p>
+<p>Per-fold AUROCs for the GAM are shown in the comparison table in Section 2.7. The mean was 0.826 (SD 0.013).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>gam_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Age"</span>, <span class="st">"Weight"</span>, <span class="st">"GCS_last"</span>, <span class="st">"HR_max"</span>, <span class="st">"Temp_min"</span>,</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>              <span class="st">"BUN_max"</span>, <span class="st">"WBC_max"</span>, <span class="st">"Platelets_min"</span>, <span class="st">"HCO3_min"</span>, <span class="st">"Glucose_max"</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>gam_formula <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(<span class="fu">paste</span>(<span class="st">"death01 ~ ICUType +"</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">paste0</span>(<span class="st">"s("</span>, gam_vars, <span class="st">")"</span>, <span class="at">collapse =</span> <span class="st">" + "</span>)))</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>gam_res <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="cf">function</span>(k) {</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  tr <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(<span class="fu">analysis</span>(folds<span class="sc">$</span>splits[[k]]))</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  te <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(<span class="fu">assessment</span>(folds<span class="sc">$</span>splits[[k]]))</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>  tr[, death01 <span class="sc">:</span><span class="er">=</span> <span class="fu">as.integer</span>(death <span class="sc">==</span> <span class="st">"1"</span>)]</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  te[, death01 <span class="sc">:</span><span class="er">=</span> <span class="fu">as.integer</span>(death <span class="sc">==</span> <span class="st">"1"</span>)]</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (v <span class="cf">in</span> gam_vars) {                       <span class="co"># medians from the training fold only</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    med <span class="ot">&lt;-</span> <span class="fu">median</span>(tr[[v]], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set</span>(tr, <span class="fu">which</span>(<span class="fu">is.na</span>(tr[[v]])), v, med)</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set</span>(te, <span class="fu">which</span>(<span class="fu">is.na</span>(te[[v]])), v, med)</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> mgcv<span class="sc">::</span><span class="fu">gam</span>(gam_formula, <span class="at">family =</span> binomial, <span class="at">data =</span> tr, <span class="at">method =</span> <span class="st">"REML"</span>)</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">predict</span>(fit, <span class="at">newdata =</span> te, <span class="at">type =</span> <span class="st">"response"</span>))</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">oof =</span> <span class="fu">data.table</span>(<span class="at">row_id =</span> te<span class="sc">$</span>row_id, <span class="at">fold =</span> k, <span class="at">model =</span> <span class="st">"gam"</span>,</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>                        <span class="at">pred =</span> p, <span class="at">death =</span> te<span class="sc">$</span>death01),</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>       <span class="at">auc =</span> <span class="fu">as.numeric</span>(pROC<span class="sc">::</span><span class="fu">auc</span>(te<span class="sc">$</span>death01, p, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">direction =</span> <span class="st">"&lt;"</span>)))</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>gam_auc <span class="ot">&lt;-</span> <span class="fu">sapply</span>(gam_res, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"auc"</span>)</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>gam_auc</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">mean =</span> <span class="fu">mean</span>(gam_auc), <span class="at">sd =</span> <span class="fu">sd</span>(gam_auc))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>gam_all <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(d_a)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>gam_all[, death01 <span class="sc">:</span><span class="er">=</span> <span class="fu">as.integer</span>(death <span class="sc">==</span> <span class="st">"1"</span>)]</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (v <span class="cf">in</span> gam_vars)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set</span>(gam_all, <span class="fu">which</span>(<span class="fu">is.na</span>(gam_all[[v]])), v, <span class="fu">median</span>(gam_all[[v]], <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>gam_fit <span class="ot">&lt;-</span> mgcv<span class="sc">::</span><span class="fu">gam</span>(gam_formula, <span class="at">family =</span> binomial, <span class="at">data =</span> gam_all, <span class="at">method =</span> <span class="st">"REML"</span>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">summary</span>(gam_fit)<span class="sc">$</span>s.table[, <span class="fu">c</span>(<span class="st">"edf"</span>, <span class="st">"p-value"</span>)], <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Why were these predictors chosen?</p>
+<p><em>Age:</em> effect might flatten or steepen at older ages and most important single risk factor in LASSO</p>
+<p><em>GCS_last:</em> (Glasgow Coma Score) neurological score. Low values can be a sign severe illness</p>
+<p><em>BUN_max:</em> kidney marker, high values are dangerous</p>
+<p><em>Platelets_min:</em> low counts signal bleeding or clotting problems plot could possibly non-linear</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>or_curve <span class="ot">&lt;-</span> <span class="cf">function</span>(var, ref) {</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">quantile</span>(gam_all[[var]], <span class="fl">0.01</span>), <span class="fu">quantile</span>(gam_all[[var]], <span class="fl">0.99</span>), <span class="at">length.out =</span> <span class="dv">100</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  g <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(gam_all)[<span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">length</span>(x) <span class="sc">+</span> <span class="dv">1</span>), ]</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  g[[var]] <span class="ot">&lt;-</span> <span class="fu">c</span>(x, ref)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  Xp  <span class="ot">&lt;-</span> <span class="fu">predict</span>(gam_fit, <span class="at">newdata =</span> g, <span class="at">type =</span> <span class="st">"lpmatrix"</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  Xd  <span class="ot">&lt;-</span> <span class="fu">sweep</span>(Xp[<span class="sc">-</span><span class="fu">nrow</span>(Xp), , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="dv">2</span>, Xp[<span class="fu">nrow</span>(Xp), ])</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  est <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(Xd <span class="sc">%*%</span> <span class="fu">coef</span>(gam_fit))</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  se  <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">rowSums</span>((Xd <span class="sc">%*%</span> <span class="fu">vcov</span>(gam_fit)) <span class="sc">*</span> Xd))</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">x =</span> x, <span class="at">or =</span> <span class="fu">exp</span>(est), <span class="at">lo =</span> <span class="fu">exp</span>(est <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> se), <span class="at">hi =</span> <span class="fu">exp</span>(est <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> se))</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>plot_or <span class="ot">&lt;-</span> <span class="cf">function</span>(var, ref) {</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">or_curve</span>(var, ref), <span class="fu">aes</span>(x, or)) <span class="sc">+</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo, <span class="at">ymax =</span> hi), <span class="at">alpha =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">1</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_y_log10</span>() <span class="sc">+</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> var, <span class="at">y =</span> <span class="st">"Odds ratio of death"</span>, <span class="at">subtitle =</span> <span class="fu">paste</span>(<span class="st">"Reference:"</span>, var, <span class="st">"="</span>, ref))</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_or</span>(<span class="st">"GCS_last"</span>, <span class="dv">15</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-gam-gcs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-gam-gcs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="checkpoint2_files/figure-html/fig-gam-gcs-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-gam-gcs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: GAM effect of last Glasgow Coma Scale (GCS) score on the odds of death (reference GCS = 15), with 95% confidence band.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-gam-gcs" class="quarto-xref">Figure&nbsp;2</a>: this plot is nearly straight with a slight curve. It shows that the odds of death rise steadily as the last GCS falls. According to the table its edf is 2.1 &gt; 1. This makes sense clinically, a lower GCS means more impaired consciousness and more severe illness.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_or</span>(<span class="st">"BUN_max"</span>, <span class="dv">20</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-gam-bun" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-gam-bun-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="checkpoint2_files/figure-html/fig-gam-bun-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-gam-bun-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: GAM effect of maximum blood urea nitrogen (BUN, mg/dL) on the odds of death (reference BUN = 20), with 95% confidence band.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-gam-bun" class="quarto-xref">Figure&nbsp;3</a>: is non-linear, shows that the odds of death increase with the maximum BUN. They are about 2 times those at the reference (20 mg/dL) at a BUN of 50, and they reach about 3.5 to 4 times higher by a BUN of 100. It has an edf of 2.9. This makes sense clinically, since a higher BUN indicates worse kidney function and a sicker patient.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_or</span>(<span class="st">"Platelets_min"</span>, <span class="dv">200</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-gam-plt" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-gam-plt-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="checkpoint2_files/figure-html/fig-gam-plt-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-gam-plt-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: GAM effect of minimum platelet count (10^3/uL) on the odds of death (reference = 200), with 95% confidence band.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-gam-plt" class="quarto-xref">Figure&nbsp;4</a>: is non-linear shows that a very low minimum platelet count is associated with higher odds of death. Has an edf of 4.5. This makes sense clinically, since a low platelet count is marker of severe illness.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_or</span>(<span class="st">"Age"</span>, <span class="dv">65</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-gam-age" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-gam-age-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="checkpoint2_files/figure-html/fig-gam-age-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-gam-age-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: GAM effect of age (years) on the odds of death (reference age = 65), with 95% confidence band.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-gam-age" class="quarto-xref">Figure&nbsp;5</a>: linear shows that the odds of death rise steadily with age and has an edf of 1. This makes sense clinically, advancing age is a consistent predictor of in-hospital mortality.</p>
+</section>
+<section id="model-3-tree-ensemble" class="level2">
+<h2 class="anchored" data-anchor-id="model-3-tree-ensemble">2.6 Model 3: tree ensemble</h2>
+<p>Per-fold AUROCs for the random forest are shown in the comparison table in Section 2.7. The mean was 0.835 (SD 0.012)</p>
+<p>Here a random forest (ranger, 500 trees) was used. Missing values were imputed with the training-fold median, plus the same four missingness flags. The tuning grid was mtry (predictors tried per split) in {3, 6, 10} by min_n (minimum stays per leaf) in {10, 30, 60}, which is 9 combinations. They were chosen by log loss with the same inner 5-fold CV inside each outer training set.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>rec_rf <span class="ot">&lt;-</span> <span class="fu">recipe</span>(death <span class="sc">~</span> ., <span class="at">data =</span> d_a) <span class="sc">|&gt;</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update_role</span>(row_id, <span class="at">new_role =</span> <span class="st">"id"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_indicate_na</span>(MAP_min, pH_min, Bilirubin_max, Albumin_min) <span class="sc">|&gt;</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_impute_median</span>(<span class="fu">all_numeric_predictors</span>()) <span class="sc">|&gt;</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_impute_mode</span>(<span class="fu">all_nominal_predictors</span>())</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>rf_spec <span class="ot">&lt;-</span> <span class="fu">rand_forest</span>(<span class="at">mtry =</span> <span class="fu">tune</span>(), <span class="at">min_n =</span> <span class="fu">tune</span>(), <span class="at">trees =</span> <span class="dv">500</span>) <span class="sc">|&gt;</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"ranger"</span>, <span class="at">seed =</span> <span class="dv">707</span>) <span class="sc">|&gt;</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>rf_wf   <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span> <span class="fu">add_recipe</span>(rec_rf) <span class="sc">|&gt;</span> <span class="fu">add_model</span>(rf_spec)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>rf_grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">mtry =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">6</span>, <span class="dv">10</span>), <span class="at">min_n =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">30</span>, <span class="dv">60</span>))</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>rf_res <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="cf">function</span>(k) {</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>  outer_split <span class="ot">&lt;-</span> folds<span class="sc">$</span>splits[[k]]</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  tuned <span class="ot">&lt;-</span> <span class="fu">tune_grid</span>(rf_wf, <span class="at">resamples =</span> inner[[k]], <span class="at">grid =</span> rf_grid,</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>                     <span class="at">metrics =</span> <span class="fu">metric_set</span>(mn_log_loss))</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>  best  <span class="ot">&lt;-</span> <span class="fu">select_best</span>(tuned, <span class="at">metric =</span> <span class="st">"mn_log_loss"</span>)</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>  fit_k <span class="ot">&lt;-</span> <span class="fu">fit</span>(<span class="fu">finalize_workflow</span>(rf_wf, best), <span class="fu">analysis</span>(outer_split))</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>  pred  <span class="ot">&lt;-</span> <span class="fu">augment</span>(fit_k, <span class="fu">assessment</span>(outer_split))</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">oof =</span> <span class="fu">data.table</span>(<span class="at">row_id =</span> pred<span class="sc">$</span>row_id, <span class="at">fold =</span> k, <span class="at">model =</span> <span class="st">"rf"</span>,</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>                        <span class="at">pred =</span> pred<span class="sc">$</span>.pred_1, <span class="at">death =</span> <span class="fu">as.integer</span>(<span class="fu">as.character</span>(pred<span class="sc">$</span>death))),</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>       <span class="at">auc =</span> <span class="fu">roc_auc</span>(pred, death, .pred_1)<span class="sc">$</span>.estimate,</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>       <span class="at">mtry =</span> best<span class="sc">$</span>mtry, <span class="at">min_n =</span> best<span class="sc">$</span>min_n)</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>rf_auc <span class="ot">&lt;-</span> <span class="fu">sapply</span>(rf_res, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"auc"</span>)</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a><span class="fu">data.table</span>(<span class="at">fold =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">auc =</span> rf_auc,</span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>           <span class="at">mtry =</span> <span class="fu">sapply</span>(rf_res, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"mtry"</span>), <span class="at">min_n =</span> <span class="fu">sapply</span>(rf_res, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"min_n"</span>))</span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">mean =</span> <span class="fu">mean</span>(rf_auc), <span class="at">sd =</span> <span class="fu">sd</span>(rf_auc))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="comparison-and-final-model" class="level2">
+<h2 class="anchored" data-anchor-id="comparison-and-final-model">2.7 Comparison and final model</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>auc_tab <span class="ot">&lt;-</span> <span class="fu">data.table</span>(</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">fold    =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>,</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">SAPS_I  =</span> bench<span class="sc">$</span>saps1,</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">SOFA    =</span> bench<span class="sc">$</span>sofa,</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">LASSO   =</span> lasso_auc,</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">GAM     =</span> gam_auc,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">Forest  =</span> rf_auc</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>summary_tab <span class="ot">&lt;-</span> <span class="fu">rbind</span>(auc_tab[, <span class="fu">lapply</span>(.SD, mean), <span class="at">.SDcols =</span> <span class="sc">!</span><span class="st">"fold"</span>][, <span class="at">stat :=</span> <span class="st">"mean"</span>],</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>                     auc_tab[, <span class="fu">lapply</span>(.SD, sd),   <span class="at">.SDcols =</span> <span class="sc">!</span><span class="st">"fold"</span>][, <span class="at">stat :=</span> <span class="st">"sd"</span>])</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(auc_tab, <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">"AUROC by held-out fold"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>AUROC by held-out fold</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">fold</th>
+<th style="text-align: right;">SAPS_I</th>
+<th style="text-align: right;">SOFA</th>
+<th style="text-align: right;">LASSO</th>
+<th style="text-align: right;">GAM</th>
+<th style="text-align: right;">Forest</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.646</td>
+<td style="text-align: right;">0.643</td>
+<td style="text-align: right;">0.842</td>
+<td style="text-align: right;">0.842</td>
+<td style="text-align: right;">0.849</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.636</td>
+<td style="text-align: right;">0.614</td>
+<td style="text-align: right;">0.839</td>
+<td style="text-align: right;">0.832</td>
+<td style="text-align: right;">0.842</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.635</td>
+<td style="text-align: right;">0.607</td>
+<td style="text-align: right;">0.818</td>
+<td style="text-align: right;">0.813</td>
+<td style="text-align: right;">0.819</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.636</td>
+<td style="text-align: right;">0.589</td>
+<td style="text-align: right;">0.833</td>
+<td style="text-align: right;">0.812</td>
+<td style="text-align: right;">0.827</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0.697</td>
+<td style="text-align: right;">0.659</td>
+<td style="text-align: right;">0.830</td>
+<td style="text-align: right;">0.830</td>
+<td style="text-align: right;">0.837</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(summary_tab, <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">"Mean and SD across folds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Mean and SD across folds</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">SAPS_I</th>
+<th style="text-align: right;">SOFA</th>
+<th style="text-align: right;">LASSO</th>
+<th style="text-align: right;">GAM</th>
+<th style="text-align: right;">Forest</th>
+<th style="text-align: left;">stat</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.650</td>
+<td style="text-align: right;">0.623</td>
+<td style="text-align: right;">0.832</td>
+<td style="text-align: right;">0.826</td>
+<td style="text-align: right;">0.835</td>
+<td style="text-align: left;">mean</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.027</td>
+<td style="text-align: right;">0.028</td>
+<td style="text-align: right;">0.009</td>
+<td style="text-align: right;">0.013</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: left;">sd</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>This Table shows the means and standard deviations across all folds and that all three models outperform both benchmarks. Mean AUROC was 0.832 for the LASSO, 0.826 for the GAM and 0.835 for the random forest, compared with 0.650 for SAPS-I and 0.623 for SOFA. The three models differ by at most 0.009, within their fold-to-fold SD, so none is clearly better.</p>
+<p>The best model beats SAPS-I and SOFA by about 0.18–0.21 AUROC, many times the fold-to-fold SD (about 0.01–0.03).</p>
+<p>I choose LASSO as the final model because it is the simplest, linear, and has lowest SD(0.009). LASSO was refit on all of set-a and saved.</p>
+<p>SAPS-I and SOFA are fixed scores, not fitted to this data, whereas the models were trained on it. Five folds also give only a rough estimate of the SD.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(model_tab)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>oof <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">c</span>(<span class="fu">lapply</span>(lasso_res, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"oof"</span>),</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">lapply</span>(gam_res,   <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"oof"</span>),</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">lapply</span>(rf_res,    <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"oof"</span>)))</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>oof <span class="ot">&lt;-</span> <span class="fu">rbind</span>(oof,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">row_id =</span> <span class="fu">seq_len</span>(n), <span class="at">fold =</span> <span class="cn">NA</span>, <span class="at">model =</span> <span class="st">"saps1"</span>,</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>             <span class="at">pred =</span> model_tab<span class="sc">$</span>saps1, <span class="at">death =</span> <span class="fu">as.integer</span>(model_tab<span class="sc">$</span>death))[<span class="sc">!</span><span class="fu">is.na</span>(pred)],</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">row_id =</span> <span class="fu">seq_len</span>(n), <span class="at">fold =</span> <span class="cn">NA</span>, <span class="at">model =</span> <span class="st">"sofa"</span>,</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">pred =</span> model_tab<span class="sc">$</span>sofa,  <span class="at">death =</span> <span class="fu">as.integer</span>(model_tab<span class="sc">$</span>death))[<span class="sc">!</span><span class="fu">is.na</span>(pred)])</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>oof[, model <span class="sc">:</span><span class="er">=</span> <span class="fu">factor</span>(model, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"lasso"</span>, <span class="st">"gam"</span>, <span class="st">"rf"</span>, <span class="st">"saps1"</span>, <span class="st">"sofa"</span>),</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>                      <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"LASSO"</span>, <span class="st">"GAM"</span>, <span class="st">"Random forest"</span>, <span class="st">"SAPS-I"</span>, <span class="st">"SOFA"</span>))]</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>roc_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">split</span>(oof, oof<span class="sc">$</span>model), <span class="cf">function</span>(d)</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>  pROC<span class="sc">::</span><span class="fu">roc</span>(d<span class="sc">$</span>death, d<span class="sc">$</span>pred, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">direction =</span> <span class="st">"&lt;"</span>, <span class="at">quiet =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>pROC<span class="sc">::</span><span class="fu">ggroc</span>(roc_list, <span class="at">legacy.axes =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">colour =</span> <span class="st">"Model"</span>, <span class="at">x =</span> <span class="st">"1 - Specificity"</span>, <span class="at">y =</span> <span class="st">"Sensitivity"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-roc" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-roc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="checkpoint2_files/figure-html/fig-roc-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-roc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Out-of-fold ROC curves for the LASSO, GAM, random forest, SAPS-I and SOFA.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-roc" class="quarto-xref">Figure&nbsp;6</a> shows that the three models (LASSO, GAM Random Forest) overlap almost everywhere on the graph and lie above the benchmarks. The three models discriminate much better than either benchmark and are indistinguishable from one another. SAPS-I is slightly above SOFA at most points, aligning with the AUROCs.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(lasso_final, <span class="fu">file.path</span>(out_dir, <span class="st">"cp2_final_model.rds"</span>))  </span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="co"># fitted workflow: recipe + model</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="fu">fwrite</span>(oof, <span class="fu">file.path</span>(out_dir, <span class="st">"cp2_oof_predictions.csv"</span>))</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dir</span>(out_dir, <span class="at">pattern =</span> <span class="st">"cp2_"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 
@@ -165,14 +859,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-      const outerScaffold = trigger.parentElement.cloneNode(true);
-      const codeEl = outerScaffold.querySelector('code');
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
         }
-      }
-      return codeEl.innerText;
+        return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

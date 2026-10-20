@@ -10,11 +10,35 @@ execute:
 
 ## AI-use statement
 
-do last
+Claude (Anthropic) and Copilot were used to assist me with pixi (pixi.toml, pixi.lock etc.), pushing to github, and generating code. With code it assisted me in loading in data, generating code for benchmarks, LASSO, GAM and plots. It was used to help me understand certain parts of the checklist I miss understood. It also helped me articulate some statements that I couldn't properly word. Claude helped me diagnose render failures and gave me pixi add commands. The first failure was Quarto couldn't handle the spaces in my old folder so Claude gave me a command to move the project to a new folder and rebuilt .pixi. Every command was ran and checked. I noticed that packages had to be in pixi for the graders, and decided to leave the code alone and report the failure to Dr. Rozen. I worked with Claude to look at predcitors. I finalized all modeling decisions and variables used. I wrote interpretations.
+
+Positives: debugs faster, can directly answer simple questions and debugging questions
+
+Negatives: gives me extra things that i don't need, makes wrong claims that i caught (did a few times)
+
+
+## Acronymns 
+
+***ICU:*** Intensive care unit
+***SAPS-I:*** Simplified Acute Physiology Score I
+***SOFA:*** Sequential Organ Failure Assessment
+***CV:*** Cross-validation
+***BUN:*** Blood urea nitrogen
+***MAP:*** Mean arterial pressure
+***pH:*** Measure of blood acidity (potential of hydrogen)
+***AUROC:*** Area under the receiver operating characteristic curve
+***LASSO:*** Least Absolute Shrinkage and Selection Operator
+***GCS:*** Glasgow Coma Scale
+***HR:*** Heart rate
+***GAM:*** Generalized additive model
+
+
+
 
 ## Setup
 
 ```{r setup}
+#| output: false
 
 suppressPackageStartupMessages({
   library(data.table)
@@ -31,9 +55,22 @@ expected_n <- 4000
 
 ```
 
+## Overview
+
+This analysis/report builds predictors from the first 48 hours of Intensive care unit (ICU) data in the PhysioNet Challenge 2012 set-a (4000 stays). Our outcome is in-hospital death.It compares three models against two clinical benchmarks, Simplified Acute Physiology Score I (SAPS-I) and (Sequential Organ Failure Assessment (SOFA) using the same 5-fold cross-validation (CV).
+
 ## 2.1 The modeling table
 
+The modeling table is built from Checkpoint 1 wide table(count, first, last, minimum, maximum and mean of each variable over the 48 hours) and has one row per stay. It is joined to In-hospital_death from Outcomes-a.txt by RecordID. Checkpoint 1 wide table used raw values, so here it is rebuilt from the cleaned long table. Every model gives one prediction per stay, so it can be compared directly with SAPS-I and SOFA. The code checks that no Record ID is duplicated.
+
+Of the 4000 stays, 554 (13.9%) end in hospital death.
+
+The cleaning decisions here are the same from Checkpoint 1: -1 is now missing, pH outside 6.5 to 8.0 and temperature outside 25 to 43 degrees became missing, heart-rate and blood-pressure values of 0 were left unchanged (zeros seen rarely). 1,894 stays had no height and 16 of the 2,106 recorded heights were impossible (outside 100 to 230 cm) so Height was dropped and we kept Weight (missing in 326 stays).
+
+SAPS-I and SOFA are used only as benchmarks so where -1 was coded was set to missing. Three stays have no time series but remain with the 0 counts and missing summaries.
+
 ```{r load-data}
+#| output: false
 
 files <- list.files(file.path(data_dir, "set-a"), full.names = TRUE)
 stopifnot(length(files) == expected_n)
@@ -52,6 +89,7 @@ dim(raw)
 ```
 
 ```{r clean}
+#| output: false
 
 # outcomes: -1 means missing
 for (col in c("SAPS-I", "SOFA", "Length_of_stay"))
@@ -76,13 +114,13 @@ c(stays_with_ts = uniqueN(ts$RecordID), n_rows = nrow(ts), n_NA = sum(is.na(ts$V
 ```
 
 ```{r run-checkpoint1}
-
 #| include: false
 source(here::here("checkpoint1.R"))
 
 ```
 
 ```{r wide-clean}
+#| output: false
 
 summary_long <- l_clean[!is.na(Value), .(
   count = .N,
@@ -112,6 +150,8 @@ range(wide$pH_max, na.rm = TRUE)
 ```
 
 ```{r check-height}
+#| output: false
+
 h <- raw[Time == "00:00" & Parameter == "Height" & Value > 0, Value]
 c(impossible_heights = sum(h < 100 | h > 230), plausible_heights = sum(h >= 100 & h <= 230))
 
@@ -120,10 +160,17 @@ c(impossible_heights = sum(h < 100 | h > 230), plausible_heights = sum(h >= 100 
 
 ```
 
-
 ## 2.2 Predictors
 
+After dummy-coding ICU type, and adding four missingness flags, the model sees 36 columns. Only data from hours 0–48 are used, Length_of_stay and Survival are not predictors because they are only known after the outcome (leakage). SAPS-I, SOFA and RecordID are excluded as predictors as well. ICUType and Gender are categorical.
+
+17 of the 30+ time series variables were left out: ALP, ALT, AST, DiasABP, FiO2, HCT, K, Mg, Na, NIDiasABP, NIMAP, NISysABP, PaCO2, PaO2, SaO2, SysABP and Urine. The predictors chosen, cover the main organ systems that drive ICU mortality using the same kinds of measurements that SAPS-I and SOFA are built from. They were not left out because of missingness (most were measured for over 65% of stays). They were left out to keep the model small and interpretable. 
+For most variables I used the worst value in the 48 hours because it would help signal to sicker patients. Variables were measured for under 30% of stays (5–28%) (troponin I, troponin T, cholesterol and respiratory rate) enter only as counts, along with lactate and mechanical ventilation. These counts are included because a test or treatment is ordered when a clinician is worried, so whether it was done carries information.
+These 17 variables weren't left out due to missingness because most were measured for over 65% of stays. They were dropped to keep the model small and interpretable. 
+Height was dropped for being about 47% missing.
+
 ```{r model-table}
+#| output: false
 
 worst_cols <- c("GCS_min", "HR_max", "MAP_min", "Temp_min", "Temp_max", "pH_min",
                 "Lactate_max", "Creatinine_max", "BUN_max", "Platelets_min",
@@ -160,12 +207,45 @@ table(model_tab$death)
 
 ```
 
+```{r}
+#| label: tbl-predictors
+#| tbl-cap: "Predictors by group (30 in total)."
+
+pred_tab <- data.table(
+  Group = c("Baseline", "Worst value in 48 h", "Last value",
+            "Trend (last minus first)", "Number of measurements"),
+  Predictors = c("Age, sex, ICU type, weight",
+                 paste(worst_cols, collapse = ", "),
+                 paste(last_cols, collapse = ", "),
+                 "GCS_trend, Creatinine_trend",
+                 paste(count_cols, collapse = ", ")),
+  N = c(4, length(worst_cols), length(last_cols), 2, length(count_cols)),
+  Reason = c(
+    "Baseline risk and case mix differ between patients and ICU types.",
+    "The sickest reading in the window reflects peak organ dysfunction (brain, circulation, kidney, liver, blood, metabolism).",
+    "Where the patient stood at the end of the window.",
+    "Whether the patient was improving or worsening over the window.",
+    "How closely the patient was monitored, which reflects clinician concern; it is not a cause of death."
+  )
+)
+
+stopifnot(sum(pred_tab$N) == length(predictor_cols))
+knitr::kable(pred_tab)
+```
+
+@tbl-predictors lists the 30 predictors by group. The six measurement counts, plus flags for whether MAP, pH, bilirubin and albumin were ever measured but are included because in ICU data something is ordered because a clinician is worried, if it was done has information. Troponin I, cholesterol, troponin T, respiratory rate were measured in 30% of stays and entered as counts because imputing values for over 70% of patients can lead to misleading information. Because of how often lactate and mechanical ventilation were recorded is informative so they were entered as counts.
 
 ## 2.3 Cross-validation design
 
+5-fold cross-validation was used on set-a with a seed set to 707 and folds stratified by death (111, 111, 111, 111 and 110 deaths per held-out fold). The same folds were used for every model to ensure that performance comparisons are not confounded by different train/test splits. The folds aren't clustered and each stay is treated (independently) as one row. All preprocessing steps (imputation, scaling, and dummy‑coding) were refit within each training fold. Hyperparameters were tuned using nested cross‑validation (inside each outer training portion, choosing the configuration with the lowest log loss before evaluating on the outer held‑out fold). The Area Under the Receiver Operating Characteristic Curve (AUROC) is reported for each curve with its mean and standard deviation.
+
+
+
 ```{r cv-folds}
+#| output: false
 
 # Modeling data: predictors, an ID column, and the outcome
+
 d_a <- as.data.frame(model_tab[, ..predictor_cols])
 d_a$row_id <- seq_len(nrow(d_a))
 d_a$death  <- factor(model_tab$death, levels = c(1, 0))   # "1" (died) is the event
@@ -177,7 +257,10 @@ folds <- vfold_cv(d_a, v = 5, strata = death)
 sapply(folds$splits, function(s) sum(assessment(s)$death == "1"))
 
 ```
+SAPS-I and SOFA are the raw scores, not fitted. Patients who died have higher median scores on both. Higher score means higher risk, so the score is used as the prediction stays with missing scores are excluded. 
+
 ```{r benchmarks}
+#| output: false
 
 # row numbers of the stays held out in each fold
 
@@ -205,7 +288,7 @@ c(saps1_missing = sum(is.na(model_tab$saps1)), sofa_missing = sum(is.na(model_ta
 ```
 
 ```{r}
-
+#| output: false
 # confirming AUROCs near 0.6 to 0.65 aren't backward 
 # patients who died have higher median scores on both
 
@@ -213,11 +296,16 @@ model_tab[, .(median_saps1 = median(saps1, na.rm = TRUE),
               median_sofa  = median(sofa,  na.rm = TRUE)), by = death]
 ```
 
-
 ## 2.4 Model 1: regularized logistic regression
 
 
+The Least Absolute Shrinkage and Selection Operator (LASSO) penalty was used to obtain a sparse, interpretable model with one coefficient per predictor. The penalty parameter was tuned over 20 values from 0.0001 to 0.1 and the selected values (0.0009–0.0026) are similar across folds. Mean AUROC was 0.832 (SD 0.009). 25–34 of the 36 predictors were retained per fold, with this, the model is close to standard logistic regression. Twenty predictors (age, GCS_last, lactate, BUN etc.) appeared in all five folds.
+
+Per-fold AUROCs for the LASSO are shown in the comparison table in Section 2.7. The mean was 0.832 (SD 0.009).
+
+
 ```{r recipe}
+#| output: false
 
 rec <- recipe(death ~ ., data = d_a) |>
   update_role(row_id, new_role = "id") |>                    # keep the ID, never use it
@@ -234,6 +322,7 @@ dim(bake(prep(rec), new_data = NULL))
 
 ```{r lasso-setup}
 
+
 spec <- logistic_reg(penalty = tune(), mixture = 1) |> set_engine("glmnet")
 wf   <- workflow() |> add_recipe(rec) |> add_model(spec)
 
@@ -245,6 +334,7 @@ inner <- lapply(folds$splits, function(s) vfold_cv(analysis(s), v = 5, strata = 
 ```
 
 ```{r lasso-run}
+#| output: false
 
 lasso_res <- lapply(1:5, function(k) {
   outer_split <- folds$splits[[k]]
@@ -273,9 +363,15 @@ c(mean = mean(lasso_auc), sd = sd(lasso_auc))
 
 sort(table(unlist(lapply(lasso_res, `[[`, "kept"))), decreasing = TRUE)
 ```
-```{r lasso-final, final LASSO refit and coefficient plot}
 
+Stability table shows how many of the 5 folds kept each predictor. 20 of the 36 model columns were kept in all five folds (like Age, GCS_min, GCS_last, HR_max, Lactate_max, BUN_max, Temp_min, WBC_max, MAP_last and Weight), so the selection is largely stable. Creatinine summaries were kept inconsistently (Creatinine_max in only 1 fold, Creatinine_last in 2).
+
+```{r lasso-final}
 #| fig-height: 8
+#| label: fig-lasso
+#| fig-cap: "LASSO coefficients (log odds of death per 1 SD), refit on all of set-a."
+
+
 set.seed(707)
 tuned_all <- tune_grid(wf, resamples = vfold_cv(d_a, v = 5, strata = death),
                        grid = grid, metrics = metric_set(mn_log_loss))
@@ -297,16 +393,28 @@ ggplot(coef_tab, aes(x = estimate, y = reorder(term, estimate))) +
 
 ```
 
+@fig-lasso shows that Age has the longest positive bar. BUN, lactate, bilirubin and maximum heart rate are positive (higher values = sicker patients). The sign of the coefficients was flipped because the glmnet output reports the opposite level, and checked this against mean age.
+
 ```{r}
+#| output: false
 
 model_tab[, .(mean_age = mean(Age, na.rm = TRUE)), by = death]
 
 ```
 
+## 2.5 Model 2: GAM
 
-## 2.5 Model 2: splines or GAM
+
+A Logistic Generalized Additive Model (GAM) was fit with smooth terms (penalized splines, smoothness chosen by REML) on 10 continuous predictors and ICUType. The predictors are: Age, Weight, GCS_last, HR_max, Temp_min, BUN_max, WBC_max, Platelets_min, HCO3_min and Glucose_max.
+
+Why were these predictors chosen: These 10 continuous predictors were chosen based on clinical grounds, covering age, nutrition, neurological status, heart, temperature, kidney, white cells, platelets, bicarbonate and glucose, and *most* of them were kept in all five LASSO folds. 
+
+Missing values are filled with the training-fold median, taken from the training fold only.
+
+Per-fold AUROCs for the GAM are shown in the comparison table in Section 2.7. The mean was 0.826 (SD 0.013).
 
 ```{r gam-cv}
+#| output: false
 
 gam_vars <- c("Age", "Weight", "GCS_last", "HR_max", "Temp_min",
               "BUN_max", "WBC_max", "Platelets_min", "HCO3_min", "Glucose_max")
@@ -336,7 +444,10 @@ gam_auc
 c(mean = mean(gam_auc), sd = sd(gam_auc))
 
 ```
+
+
 ```{r gam-final}
+#| output: false
 
 gam_all <- as.data.table(d_a)
 gam_all[, death01 := as.integer(death == "1")]
@@ -347,6 +458,17 @@ gam_fit <- mgcv::gam(gam_formula, family = binomial, data = gam_all, method = "R
 round(summary(gam_fit)$s.table[, c("edf", "p-value")], 3)
 
 ```
+
+Why were these predictors chosen?
+
+*Age:* effect might flatten or steepen at older ages and most important single risk factor in LASSO
+
+*GCS_last:* (Glasgow Coma Score) neurological score. Low values can be a sign severe illness
+
+*BUN_max:* kidney marker, high values are dangerous
+
+*Platelets_min:* low counts signal bleeding or clotting problems plot could possibly non-linear
+
 ```{r gam-plots}
 
 or_curve <- function(var, ref) {
@@ -369,16 +491,53 @@ plot_or <- function(var, ref) {
     labs(x = var, y = "Odds ratio of death", subtitle = paste("Reference:", var, "=", ref))
 }
 
+```
+
+```{r}
+#| label: fig-gam-gcs
+#| fig-cap: "GAM effect of last Glasgow Coma Scale (GCS) score on the odds of death (reference GCS = 15), with 95% confidence band."
 plot_or("GCS_last", 15)
+
+```
+
+@fig-gam-gcs: this plot is nearly straight with a slight curve. It shows that the odds of death rise steadily as the last GCS falls. According to the table its edf is 2.1 > 1. This makes sense clinically, a lower GCS means more impaired consciousness and more severe illness.
+
+```{r}
+#| label: fig-gam-bun
+#| fig-cap: "GAM effect of maximum blood urea nitrogen (BUN, mg/dL) on the odds of death (reference BUN = 20), with 95% confidence band."
 plot_or("BUN_max", 20)
+
+```
+
+@fig-gam-bun: is non-linear, shows that the odds of death increase with the maximum BUN. They are about 2 times those at the reference (20 mg/dL) at a BUN of 50, and they reach about 3.5 to 4 times higher by a BUN of 100. It has an edf of 2.9. This makes sense clinically, since a higher BUN indicates worse kidney function and a sicker patient.
+
+```{r}
+#| label: fig-gam-plt
+#| fig-cap: "GAM effect of minimum platelet count (10^3/uL) on the odds of death (reference = 200), with 95% confidence band."
 plot_or("Platelets_min", 200)
+
+```
+
+@fig-gam-plt: is non-linear shows that a very low minimum platelet count is associated with higher odds of death. Has an edf of 4.5. This makes sense clinically, since a low platelet count is marker of severe illness.
+
+```{r}
+#| label: fig-gam-age
+#| fig-cap: "GAM effect of age (years) on the odds of death (reference age = 65), with 95% confidence band."
 plot_or("Age", 65)
 
 ```
 
+@fig-gam-age: linear shows that the odds of death rise steadily with age and has an edf of 1. This makes sense clinically, advancing age is a consistent predictor of in-hospital mortality.
+
+
 ## 2.6 Model 3: tree ensemble
 
+Per-fold AUROCs for the random forest are shown in the comparison table in Section 2.7. The mean was 0.835 (SD 0.012)
+
+Here a random forest (ranger, 500 trees) was used. Missing values were imputed with the training-fold median, plus the same four missingness flags. The tuning grid was mtry (predictors tried per split) in {3, 6, 10} by min_n (minimum stays per leaf) in {10, 30, 60}, which is 9 combinations. They were chosen by log loss with the same inner 5-fold CV inside each outer training set.
+
 ```{r rf-run}
+#| output: false
 
 rec_rf <- recipe(death ~ ., data = d_a) |>
   update_role(row_id, new_role = "id") |>
@@ -412,6 +571,8 @@ c(mean = mean(rf_auc), sd = sd(rf_auc))
 
 ```
 
+
+
 ## 2.7 Comparison and final model
 
 ```{r comparison}
@@ -431,7 +592,18 @@ knitr::kable(summary_tab, digits = 3, caption = "Mean and SD across folds")
 
 ```
 
-```{r roc-plot}
+This Table shows the means and standard deviations across all folds and that all three models outperform both benchmarks. Mean AUROC was 0.832 for the LASSO, 0.826 for the GAM and 0.835 for the random forest, compared with 0.650 for SAPS-I and 0.623 for SOFA. The three models differ by at most 0.009, within their fold-to-fold SD, so none is clearly better.
+
+The best model beats SAPS-I and SOFA by about 0.18–0.21 AUROC, many times the fold-to-fold SD (about 0.01–0.03).
+
+I choose LASSO as the final model because it is the simplest, linear, and has lowest SD(0.009). LASSO was refit on all of set-a and saved.
+
+
+SAPS-I and SOFA are fixed scores, not fitted to this data, whereas the models were trained on it. Five folds also give only a rough estimate of the SD.
+
+```{r}
+#| label: fig-roc
+#| fig-cap: "Out-of-fold ROC curves for the LASSO, GAM, random forest, SAPS-I and SOFA."
 
 n <- nrow(model_tab)
 oof <- rbindlist(c(lapply(lasso_res, `[[`, "oof"),
@@ -453,11 +625,12 @@ pROC::ggroc(roc_list, legacy.axes = TRUE) +
   geom_abline(linetype = "dashed") +
   labs(colour = "Model", x = "1 - Specificity", y = "Sensitivity")
 
-sapply(roc_list, function(r) round(as.numeric(pROC::auc(r)), 3))
-
 ```
 
+@fig-roc shows that the three models (LASSO, GAM Random Forest) overlap almost everywhere on the graph and lie above the benchmarks. The three models discriminate much better than either benchmark and are indistinguishable from one another. SAPS-I is slightly above SOFA at most points, aligning with the AUROCs.
+
 ```{r save-outputs}
+#| output: false
 
 saveRDS(lasso_final, file.path(out_dir, "cp2_final_model.rds"))  
 # fitted workflow: recipe + model
