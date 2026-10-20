@@ -49,7 +49,7 @@ pixi run --locked checkpoint2
 Checkpoint 1: runs checkpoint1.R and takes about 16 seconds. In Powershell
 Checkpoint 2: renders checkpoint2.qmd. It runs checkpoint1.R first (through
  source()) and then builds the modeling table and fits the three models with
-  5-fold cross-validation. It takes about 6 minutes on my laptop, measured with the Render button
+  5-fold cross-validation. It takes about 10 minutes on my laptop, measured with the Render button
   ( Windows 11)
 
 ## Output

@@ -4,3 +4,6 @@ output/*
 .pixi/
 .Rhistory
 .Rproj.user/
+
+/.quarto/
+**/*.quarto_ipynb
